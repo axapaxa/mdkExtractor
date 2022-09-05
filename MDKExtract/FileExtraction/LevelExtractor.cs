@@ -10,19 +10,20 @@ namespace MDKExtract.FileExtraction
 {
     public static class LevelExtractor
     {
-        public static void Extract(Stream stream, string baseFilePath)
+        public static void Extract(Stream stream, string baseFilePath, bool is1996Level)
         {
             stream.Position = 0;
             var reader = new BinaryReader(stream);
             var textureNum = reader.ReadUInt32();
             if (textureNum > 40)
                 throw new InvalidDataException("Invalid texture num");
-            var textures = Enumerable.Range(0, (int)textureNum).Select(x => ExtractionUtils.ReadString(reader, 10)).ToList();
+            var textures = Enumerable.Range(0, (int)textureNum).Select(x => ExtractionUtils.ReadString(reader, is1996Level ? 16 : 10)).ToList();
             while (stream.Position % 4 != 0) reader.ReadByte();
             var aSectionCnt = reader.ReadUInt32();
             if (aSectionCnt > 5000)
                 throw new InvalidDataException("Bad A count");
-            foreach (var x in Enumerable.Range(0, (int)(aSectionCnt * 11))) reader.ReadUInt32();
+            var aSectionLength = is1996Level ? 36 : 44;
+            foreach (var x in Enumerable.Range(0, (int)(aSectionCnt * aSectionLength))) reader.ReadByte();
             var bSectionCnt = reader.ReadUInt32();
             var bSectionStart = stream.Position;
             stream.Seek(36 * bSectionCnt, SeekOrigin.Current);

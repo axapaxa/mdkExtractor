@@ -17,20 +17,32 @@ namespace MDKExtract.ExtractorTypes
             ExtractedModel model;
 
             var entries = new List<(string name, int offset, MemoryStream header)>();
+            bool is1996Demo;
             using (allocator.StartAllocation("header"))
             {
                 var headerRoot = new UndecodedHeadersReader(data);
                 var length = reader.ReadInt32() + 4;
                 if (length != data.Length)
                     throw new ArgumentException("Invalid file: Wrong header");
-                var fileName = ExtractionUtils.ReadString(reader, 12);
-                var length2 = reader.ReadInt32() + 8 + 4;
-                if (length2 != data.Length)
-                    throw new ArgumentException("Invalid file: Secondary header wrong");
+                var maybeHeadless = reader.ReadInt32();
+                is1996Demo = maybeHeadless < 100; //1996 demo has no extra headers
+                data.Seek(-4, SeekOrigin.Current);
+                var fileName = "";
+                if (!is1996Demo) 
+                {
+                    fileName = ExtractionUtils.ReadString(reader, 12);
+                    var length2 = reader.ReadInt32() + 8 + 4;
+                    if (length2 != data.Length)
+                        throw new ArgumentException("Invalid file: Secondary header wrong");
+                }
+               
                 var undecodedHeader = headerRoot.FinishReading();
                 foreach (var index1 in Enumerable.Range(1, 4))
                 {
-                    foreach(var index2 in Enumerable.Range(1, reader.ReadInt32()))
+                    var entriesCount = reader.ReadInt32();
+                    if (entriesCount > 100)
+                        throw new ArgumentException("Not plausibly a CMI archive");
+                    foreach (var index2 in Enumerable.Range(1, entriesCount))
                     {
                         var entryHeader = new UndecodedHeadersReader(data);
                         var strLength = reader.ReadByte();
@@ -46,13 +58,20 @@ namespace MDKExtract.ExtractorTypes
             var headerEnd = (int)data.Position;
             if (entries.Select(x => x.offset).Where(x => x != 0).Min() != headerEnd)
                 throw new ArgumentException("Header ended too soon(?)");
-            data.Seek(-12, SeekOrigin.End);
-            using (allocator.StartAllocation("end"))
+            if (!is1996Demo)
             {
-                var fileName = ExtractionUtils.ReadString(reader, 12);
-                if (fileName != model.FileName)
-                    throw new ArgumentException("Invalid file backup header");
+                data.Seek(-12, SeekOrigin.End);
+                using (allocator.StartAllocation("end"))
+                {
+                    var fileName = ExtractionUtils.ReadString(reader, 12);
+                    if (fileName != model.FileName)
+                        throw new ArgumentException("Invalid file backup header");
+                }
+            } else
+            {
+                data.Seek(0, SeekOrigin.End);
             }
+            
             model.Data.AddRange(
                 entries
                     .Where(x => x.offset == 0)

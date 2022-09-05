@@ -25,10 +25,13 @@ namespace MDKExtract.RawFileCompressors
             if (decoded != null)
             {
                 var (type, hasExtraHead) = decoded.Value;
+                var is1996BspFile = baseFilePath.EndsWith(".BSP", StringComparison.InvariantCultureIgnoreCase);
+                if (is1996BspFile)
+                    type = ModelType.Level;
                 try
                 {
                     if (type == ModelType.Level)
-                        LevelExtractor.Extract(stream, baseFilePath);
+                        LevelExtractor.Extract(stream, baseFilePath, is1996BspFile);
                     else
                         Model1Extract.Extract(stream, baseFilePath, type, hasExtraHead);
                 }

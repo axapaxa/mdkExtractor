@@ -58,7 +58,7 @@ namespace MDKExtract
                 var newParts = model.FileName.Length > 1 ? meta.PathParts.SkipLast(1).Append(model.FileName) : meta.PathParts;
                 var metaPieces = model.Data.SelectMany(x => DetectMetaPiecesInFolderStructure.Decode(x.Data)).Concat(PalleteAppender.GetPalletes(model, extractor, new FullFolderMeta() { FolderName = newParts.Last(), MetaPieces = meta.MetaPieces, PathParts = newParts.ToArray() })).ToList();
                 
-                var tasks = model.Data.AsParallel().WithDegreeOfParallelism(4).Select(async data =>
+                var tasks = model.Data.AsParallel().WithDegreeOfParallelism(Program.DecodingParalellism).Select(async data =>
                 {
                     await Decode(subdir, data.Data, false, new FullFolderMeta() { FolderName = data.Name, MetaPieces = meta.MetaPieces.Concat(metaPieces).ToList(), PathParts = newParts.Append(data.Name).ToArray() }, extractors);
                     if ((data.PostData?.Length ?? 0) != 0) 

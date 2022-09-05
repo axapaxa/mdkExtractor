@@ -31,6 +31,8 @@ namespace MDKExtract.PaleteExtraction
         public async Task ReadStatsPalette(DirectoryInfo dir)
         {
             var filesToParse = dir.GetFiles("STATS.BNI", new EnumerationOptions() { RecurseSubdirectories = true });
+            if (!filesToParse.Any())
+                return;
             using var fs = new FileStream(filesToParse.Single().FullName, FileMode.Open, FileAccess.Read);
             var results = await new StatsBniExtractor().Extract(fs);
             var levelData = results.GetElement("PAL").Data!;
@@ -43,6 +45,8 @@ namespace MDKExtract.PaleteExtraction
         public async Task ReadStreamPalette(DirectoryInfo dir)
         {
             var filesToParse = dir.GetFiles("STREAM.BNI", new EnumerationOptions() { RecurseSubdirectories = true });
+            if (!filesToParse.Any())
+                return;
             using var fs = new FileStream(filesToParse.Single().FullName, FileMode.Open, FileAccess.Read);
             var results = await new StatsBniExtractor().Extract(fs);
             var levelData = results.GetElement("PAL").Data!;
@@ -79,6 +83,8 @@ namespace MDKExtract.PaleteExtraction
         public async Task ReadFallFiles(DirectoryInfo dir)
         {
             var filesToParse = dir.GetFiles("FALL3D.BNI", new EnumerationOptions() { RecurseSubdirectories = true });
+            if (!filesToParse.Any())
+                return;
             using var fs = new FileStream(filesToParse.Single().FullName, FileMode.Open, FileAccess.Read);
             var results = await new StatsBniExtractor().Extract(fs);
             var parsedFileTasks = results.Data.Where(x => x.Name.StartsWith("FALLP") && x.Name.Length == 6).Select(async x =>
